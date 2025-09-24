@@ -12,7 +12,7 @@
 - Tous les frameworks CSS et JS sont permis - en cas de doute vérifiez avec l'enseignant.
 - TypeScript est permis pour le projet.
 - Le backend doit être réalisé en NodeJS avec Express.
-- Si vous désirez réaliser le frontend avec un autre framework que Vue (React, Angular etc.) - veuillez communiquer avec l'enseignant avant de commencer.
+- Le frontend doit être réalisé avec un framework tel que Vue, React Angular etc. Si vous désirez réaliser le frontend avec un autre framework que Vue (React, Angular etc.) - veuillez communiquer avec l'enseignant avant de commencer.
 
 ### Remises
 
