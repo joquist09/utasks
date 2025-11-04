@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Box, CircularProgress, Container, Typography } from '@mui/material';
 import { DropResult } from '@hello-pangea/dnd';
 import Board from '../components/boards/Board';
+import CreateListDialog from '../components/lists/CreateListDialog';
 import { List as ListType, PendingCardMove } from '../types';
 import { boardService } from '../services/api/boards';
 import { listService } from '../services/api/lists';
@@ -16,6 +17,10 @@ const BoardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingMove, setPendingMove] = useState<PendingCardMove | null>(null);
+  const [isCreateListDialogOpen, setIsCreateListDialogOpen] = useState(false);
+  const handleListDeleted = (listId: string) => {
+    setLists((previous) => previous.filter((list) => list.id !== listId));
+  };
 
   useEffect(() => {
     const fetchBoardData = async () => {
@@ -124,38 +129,16 @@ const BoardPage: React.FC = () => {
   };
 
   const handleAddList = () => {
-    void (async () => {
-      if (!id) {
-        console.error('Board ID is missing');
-        alert('Board ID is missing');
-        return;
-      }
+    setIsCreateListDialogOpen(true);
+  };
 
-      const listName = prompt('Enter list name (3-30 characters):');
-      
-      if (!listName?.trim()) {
-        return;
-      }
+  const handleCreateList = async (name: string): Promise<void> => {
+    if (!id) {
+      throw new Error('Board ID is missing');
+    }
 
-      if (listName.trim().length < 3) {
-        alert('List name must be at least 3 characters long');
-        return;
-      }
-
-      if (listName.trim().length > 30) {
-        alert('List name must not exceed 30 characters');
-        return;
-      }
-
-      try {
-        const newList = await listService.createList({ name: listName, boardId: id });
-        setLists((prevLists) => [...prevLists, newList]);
-      } catch (err) {
-        console.error('Error creating list:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        alert(`Failed to create list: ${errorMessage}`);
-      }
-    })();
+    const newList = await listService.createList({ name, boardId: id });
+    setLists((previous) => [...previous, newList]);
   };
 
   if (loading) {
@@ -178,16 +161,26 @@ const BoardPage: React.FC = () => {
     );
   }
 
-  return <Board 
-    title={boardName} 
-    lists={lists} 
-    refreshKey={refreshKey}
-    pendingMove={pendingMove}
-    onDragEnd={(result) => {
-      void handleDragEnd(result);
-    }} 
-    onAddList={handleAddList} 
-  />;
+  return (
+    <>
+      <Board 
+        title={boardName} 
+        lists={lists} 
+        refreshKey={refreshKey}
+        pendingMove={pendingMove}
+        onDragEnd={(result) => {
+          void handleDragEnd(result);
+        }} 
+        onAddList={handleAddList}
+        onDeleteList={handleListDeleted}
+      />
+      <CreateListDialog
+        open={isCreateListDialogOpen}
+        onClose={() => setIsCreateListDialogOpen(false)}
+        onSubmit={(name) => handleCreateList(name)}
+      />
+    </>
+  );
 };
 
 export default BoardPage;

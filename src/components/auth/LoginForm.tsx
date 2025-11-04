@@ -9,35 +9,38 @@ import {
   CircularProgress,
   Link,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 interface LoginFormProps {
-  onLogin: (username: string, password: string) => Promise<void>;
+  onLogin: (username: string) => Promise<void>;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!username.trim()) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
       setError('Please enter a username');
       return;
     }
 
     setError(null);
     setLoading(true);
-    
-    onLogin(username, '')
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'An error occurred during login');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+
+    try {
+  await onLogin(trimmedUsername);
+  void navigate('/boards', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,7 +71,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            void handleSubmit(event);
+          }}
+          noValidate
+          sx={{ mt: 1, width: '100%' }}
+        >
           <TextField
             margin="normal"
             required

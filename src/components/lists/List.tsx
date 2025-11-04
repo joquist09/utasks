@@ -3,7 +3,8 @@ import { Paper, Typography, Box, IconButton, Select, MenuItem, FormControl, Inpu
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Card from '../cards/Card.tsx';
-import { List as ListType, Card as CardType, PendingCardMove } from '../../types';
+import CreateCardDialog from '../cards/CreateCardDialog';
+import { List as ListType, Card as CardType, PendingCardMove, CreateCardDto } from '../../types';
 import { cardService } from '../../services/api/cards';
 import { listService } from '../../services/api/lists';
 
@@ -12,15 +13,23 @@ interface ListProps {
   index: number;
   refreshTrigger?: number;
   pendingMove?: PendingCardMove | null;
+  onDeleteList?: (listId: string) => void;
 }
 
 type SortOption = 'none' | 'priority-asc' | 'priority-desc' | 'date-asc' | 'date-desc';
 
-const List: React.FC<ListProps> = ({ list, index, refreshTrigger = 0, pendingMove = null }) => {
+const List: React.FC<ListProps> = ({
+  list,
+  index,
+  refreshTrigger = 0,
+  pendingMove = null,
+  onDeleteList,
+}) => {
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>('none');
   const lastProcessedMoveId = useRef<string | null>(null);
+  const [isCreateCardDialogOpen, setIsCreateCardDialogOpen] = useState(false);
 
   const sortedCards = useMemo(() => {
     const cardsCopy = [...cards];
@@ -143,46 +152,36 @@ const List: React.FC<ListProps> = ({ list, index, refreshTrigger = 0, pendingMov
 
     try {
       await listService.deleteList(list.id);
-      window.location.reload();
+      onDeleteList?.(list.id);
     } catch (error) {
       console.error('Error deleting list:', error);
       alert('Failed to delete list. Please try again.');
     }
   };
 
-  const handleAddCard = async () => {
-    const cardTitle = prompt('Enter card title (3-50 characters):');
-    if (!cardTitle?.trim()) return;
+  const handleCreateCard = async (payload: CreateCardDto) => {
+    const createdCard = await cardService.createCard(payload);
+    setCards((previous) => [...previous, createdCard]);
+  };
 
-    if (cardTitle.trim().length < 3) {
-      alert('Card title must be at least 3 characters long');
-      return;
-    }
+  const handleCardDeleted = (cardId: string) => {
+    setCards((previous) => previous.filter((card) => card.id !== cardId));
+  };
 
-    if (cardTitle.trim().length > 50) {
-      alert('Card title must not exceed 50 characters');
-      return;
-    }
-
-    try {
-      const newCard = await cardService.createCard({
-        title: cardTitle,
-        listId: list.id,
-      });
-      setCards((prevCards) => [...prevCards, newCard]);
-    } catch (error) {
-      console.error('Error creating card:', error);
-      alert(`Failed to create card: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+  const handleCardUpdated = (updatedCard: CardType) => {
+    setCards((previous) =>
+      previous.map((card) => (card.id === updatedCard.id ? { ...card, ...updatedCard } : card))
+    );
   };
 
   return (
     <Draggable draggableId={list.id} index={index}>
       {(provided) => (
-        <Paper
-          {...provided.draggableProps}
-          ref={provided.innerRef}
-          sx={{
+        <>
+          <Paper
+            {...provided.draggableProps}
+            ref={provided.innerRef}
+            sx={{
             width: {
               xs: '100%',
               md: '280px',
@@ -268,7 +267,13 @@ const List: React.FC<ListProps> = ({ list, index, refreshTrigger = 0, pendingMov
                   </Typography>
                 ) : (
                   sortedCards.map((card, cardIndex) => (
-                    <Card key={card.id} card={card} index={cardIndex} />
+                    <Card
+                      key={card.id}
+                      card={card}
+                      index={cardIndex}
+                      onDelete={handleCardDeleted}
+                      onUpdate={handleCardUpdated}
+                    />
                   ))
                 )}
                 {provided.placeholder}
@@ -283,14 +288,22 @@ const List: React.FC<ListProps> = ({ list, index, refreshTrigger = 0, pendingMov
                 cursor: 'pointer',
                 '&:hover': { color: 'primary.main' },
               }}
-              onClick={() => {
-                void handleAddCard();
-              }}
+              onClick={() => setIsCreateCardDialogOpen(true)}
             >
               + Add a card
             </Typography>
           </Box>
         </Paper>
+        <CreateCardDialog
+          open={isCreateCardDialogOpen}
+          onClose={() => setIsCreateCardDialogOpen(false)}
+          listId={list.id}
+          onSubmit={async (payload) => {
+            await handleCreateCard(payload);
+            setIsCreateCardDialogOpen(false);
+          }}
+        />
+        </>
       )}
     </Draggable>
   );

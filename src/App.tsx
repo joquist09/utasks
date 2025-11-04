@@ -59,23 +59,11 @@ const theme = createTheme({
 
 const App: React.FC = () => {
   const handleLogin = async (username: string): Promise<void> => {
-    try {
-      await authService.login(username);
-      window.location.href = '/boards';
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
+    await authService.login(username);
   };
 
   const handleRegister = async (username: string): Promise<void> => {
-    try {
-      await authService.register(username);
-      window.location.href = '/boards';
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
-    }
+    await authService.register(username);
   };
 
   return (

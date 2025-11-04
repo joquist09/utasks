@@ -9,40 +9,43 @@ import {
   CircularProgress,
   Link,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 interface RegisterFormProps {
-  onRegister: (username: string, password: string) => Promise<void>;
+  onRegister: (username: string) => Promise<void>;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!username.trim()) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
       setError('Please enter a username');
       return;
     }
 
-    if (username.length < 3) {
+    if (trimmedUsername.length < 3) {
       setError('Username must be at least 3 characters');
       return;
     }
 
     setError(null);
     setLoading(true);
-    
-    onRegister(username, '')
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'An error occurred during registration');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+
+    try {
+      await onRegister(trimmedUsername);
+      void navigate('/boards', { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,7 +72,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onRegister }) => {
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            void handleSubmit(event);
+          }}
+          noValidate
+          sx={{ mt: 1, width: '100%' }}
+        >
           <TextField
             margin="normal"
             required

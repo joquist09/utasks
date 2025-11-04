@@ -13,6 +13,8 @@ import EditCardDialog from './EditCardDialog';
 interface CardProps {
   card: CardType;
   index: number;
+  onDelete?: (cardId: string) => void;
+  onUpdate?: (card: CardType) => void;
 }
 
 const priorityColors: Record<number, 'success' | 'warning' | 'error'> = {
@@ -33,10 +35,13 @@ const priorityIcons: Record<number, string> = {
   3: '↑',
 };
 
-const Card: React.FC<CardProps> = ({ card, index }) => {
+const Card: React.FC<CardProps> = ({ card, index, onDelete, onUpdate }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentCard, setCurrentCard] = useState<CardType>(card);
+  React.useEffect(() => {
+    setCurrentCard(card);
+  }, [card]);
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -64,6 +69,7 @@ const Card: React.FC<CardProps> = ({ card, index }) => {
         listId: updatedCard.listId,
       });
       setCurrentCard(updatedCard);
+      onUpdate?.(updatedCard);
     } catch (error) {
       console.error('Error updating card:', error);
       alert(`Failed to update card: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -78,7 +84,7 @@ const Card: React.FC<CardProps> = ({ card, index }) => {
 
     try {
       await cardService.deleteCard(card.id);
-      window.location.reload();
+      onDelete?.(card.id);
     } catch (error) {
       console.error('Error deleting card:', error);
       alert('Failed to delete card. Please try again.');

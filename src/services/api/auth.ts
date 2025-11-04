@@ -21,8 +21,13 @@ type UserResponse = {
 };
 
 export const authService = {
-  login: async (_username: string): Promise<{ user: User }> => {
+  login: async (username: string): Promise<{ user: User }> => {
     try {
+      const sanitizedUsername = username.trim();
+      if (!sanitizedUsername) {
+        throw new Error('Username is required');
+      }
+
       const userId = localStorage.getItem('userId');
       
       if (!userId) {
@@ -34,6 +39,7 @@ export const authService = {
       if (!response.data.success || !response.data.data) {
         throw new Error('Failed to retrieve user');
       }
+      localStorage.setItem('username', sanitizedUsername);
       
       return { user: response.data.data };
     } catch (error) {

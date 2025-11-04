@@ -13,9 +13,10 @@ interface BoardProps {
   onAddList: () => void;
   refreshKey?: number;
   pendingMove?: PendingCardMove | null;
+  onDeleteList: (listId: string) => void;
 }
 
-const Board: React.FC<BoardProps> = ({ title, lists, onDragEnd, onAddList, refreshKey = 0, pendingMove = null }) => {
+const Board: React.FC<BoardProps> = ({ title, lists, onDragEnd, onAddList, refreshKey = 0, pendingMove = null, onDeleteList }) => {
   const navigate = useNavigate();
 
   return (
@@ -80,6 +81,7 @@ const Board: React.FC<BoardProps> = ({ title, lists, onDragEnd, onAddList, refre
                       index={index}
                       refreshTrigger={refreshKey}
                       pendingMove={pendingMove}
+                      onDeleteList={onDeleteList}
                     />
                   ))}
                   {provided.placeholder}
